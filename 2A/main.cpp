@@ -65,14 +65,14 @@ public:
 
     long long show_size() const { return size; }
 
-    std::vector<int> Kasai_algorithm(std::string &s) {
-        std::vector<int> pos(size);//inverted suf
-        std::vector<int> lcp(size);
-        for (int i = 0; i < size; i++) {
+    std::vector<long long> Kasai_algorithm(std::string &s) {
+        std::vector<long long > pos(size);//inverted suf
+        std::vector<long long > lcp(size);
+        for (long long i = 0; i < size; i++) {
             pos[suffix_arrays[i]] = i;
         }
-        int k = 0;
-        for (int i = 0; i < size; ++i) {
+        long long k = 0;
+        for (long long i = 0; i < size; ++i) {
             if (k > 0) {
                 k--;
             }
@@ -99,12 +99,12 @@ private:
 
 long long CountDifferentSubstr(std::string &s) {
     SuffixArrayFounder S = SuffixArrayFounder(s);
-    std::vector <int > lcps=S.Kasai_algorithm(s);
+    std::vector <long long > lcps=S.Kasai_algorithm(s);
     long long ans = 0;
     for (long long i = 1; i < S.show_size(); ++i) { // c 1 потому что игнорируем 0 элемент
         ans += (S.show_size() - 1 - S.show_suffix_array()[i]);
     }
-    for (int i=0;i<s.size()-1;++i){
+    for (long long i=0;i<s.size()-1;++i){
         ans-=lcps[i];
     }
     return ans;
