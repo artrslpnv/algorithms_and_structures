@@ -57,9 +57,9 @@ public:
         }
     }
 
-    std::vector<long long> show_suffix_array() const { return suffix_arrays; }
+    std::vector<long long>& show_suffix_array()  { return suffix_arrays; }
 
-    std::vector <std::vector<long long>> show_equivalent_classes() const { return equivalent_clases; }
+    std::vector <std::vector<long long>> & show_equivalent_classes(){ return equivalent_clases; }
 
     long long show_size() const { return size; }
 
