@@ -8,7 +8,7 @@ const int alphabet = 256;
 class SuffixArrayFounder {
 public:
     explicit SuffixArrayFounder(const std::string &s) : size(s.size()), suffix_arrays(s.size()),
-                                                        equivalent_clases(s.size(), std::vector<long long>(s.size())) {
+                                                        equivalent_clases(s.size()) {
         std::vector<long long> counting(alphabet, 0);
         for (long long i = 0; i < s.size(); ++i) {
             ++counting[s[i]];
@@ -20,10 +20,10 @@ public:
             suffix_arrays[--counting[s[i]]] = i;
         }
         long long amount_of_classes = 1;
-        equivalent_clases[0][suffix_arrays[0]] = 0;
+        equivalent_clases[suffix_arrays[0]] = 0;
         for (long long i = 1; i < s.size(); ++i) {
             if (s[suffix_arrays[i]] != s[suffix_arrays[i - 1]]) { ++amount_of_classes; }
-            equivalent_clases[0][suffix_arrays[i]] = amount_of_classes - 1;
+            equivalent_clases[suffix_arrays[i]] = amount_of_classes - 1;
         }
         for (long long j = 0; (1 << j) < s.size(); ++j) {
             std::vector<long long> permitation_in_the_second_order(s.size());
@@ -35,57 +35,66 @@ public:
             }
             counting = std::vector<long long>(amount_of_classes, 0);
             for (long long i = 0; i < s.size(); ++i) {
-                counting[equivalent_clases[j][permitation_in_the_second_order[i]]]++;
+                counting[equivalent_clases[permitation_in_the_second_order[i]]]++;
             }
             for (long long i = 1; i < amount_of_classes; ++i) {
                 counting[i] += counting[i - 1];
             }
             for (long long i = s.size() - 1; i >= 0; --i) {
-                suffix_arrays[--counting[equivalent_clases[j][permitation_in_the_second_order[i]]]] = permitation_in_the_second_order[i];
+                suffix_arrays[--counting[equivalent_clases[permitation_in_the_second_order[i]]]] = permitation_in_the_second_order[i];
             }
-            equivalent_clases[j + 1][0] = 0;
+            std:: vector <long long> new_equivalent_clases(s.size());
+            new_equivalent_clases[0] = 0;
             amount_of_classes = 1;
             for (long long i = 1; i < s.size(); ++i) {
                 long long mid1 = (suffix_arrays[i] + (1 << j)) % s.size(), mid2 =
                         (suffix_arrays[i - 1] + (1 << j)) % s.size();
-                if ((equivalent_clases[j][suffix_arrays[i]] != equivalent_clases[j][suffix_arrays[i - 1]])
-                    || (equivalent_clases[j][mid1] != equivalent_clases[j][mid2])) {
+                if ((equivalent_clases[suffix_arrays[i]] != equivalent_clases[suffix_arrays[i - 1]])
+                    || (equivalent_clases[mid1] != equivalent_clases[mid2])) {
                     amount_of_classes++;
                 }
-                equivalent_clases[j + 1][suffix_arrays[i]] = amount_of_classes - 1;
+                new_equivalent_clases[suffix_arrays[i]] = amount_of_classes - 1;
             }
+            equivalent_clases = new_equivalent_clases;
         }
     }
 
-    std::vector<long long>& show_suffix_array() { return suffix_arrays; }
+    std::vector<long long>& show_suffix_array()  { return suffix_arrays; }
 
-    std::vector<std::vector<long long>> & show_equivalent_classes() { return equivalent_clases; }
+    std::vector<long long> &show_equivalent_classes(){ return equivalent_clases; }
 
     long long show_size() const { return size; }
 
-    long long LCP(long long i, long long j) {
-        long long ans = 0;
-        for (long long k = floor(log2(size)); k >= 0; --k) {
-            if (equivalent_clases[k][i] == equivalent_clases[k][j]) {
-                ans += (1 << k);
-                i += (1 << k);
-                j += (1 << k);
+    std::vector<long long> Kasai_algorithm(std::string &s) {
+        std::vector<long long > pos(size);//inverted suf
+        std::vector<long long > lcp(size);
+        for (long long i = 0; i < size; i++) {
+            pos[suffix_arrays[i]] = i;
+        }
+        long long k = 0;
+        for (long long i = 0; i < size; ++i) {
+            if (k > 0) {
+                k--;
+            }
+            if (pos[i] == size - 1) {
+                lcp[size - 1] = -1;
+                k = 0;
+                continue;
+            } else {
+                int j = suffix_arrays[pos[i] + 1];
+                while (std::max(i + k, j + k) < size && s[i+k]==s[j+k] ){
+                    k++;
+                }
+                lcp[pos[i]]=k;
             }
         }
-        return ans;
-    }
-
-    std::vector<long long> LCPs() {
-        std::vector<long long> lcps(size - 1);
-        lcps[0] = 0;
-        for (long long i = 1; i < size - 1; ++i) { lcps[i] = LCP(suffix_arrays[i], suffix_arrays[i + 1]); }
-        return lcps;
+        return lcp;
     }
 
 private:
     long long size;
     std::vector<long long> suffix_arrays;
-    std::vector<std::vector<long long>> equivalent_clases;
+    std::vector <long long> equivalent_clases;
 };
 
 bool Are_not_in_one_string(long long index1, long long index2, long long size_of_first) {
@@ -97,7 +106,7 @@ std::string common_k_stats(const std::string &s, const std::string &t, long long
     std::string ans = "-1";
     SuffixArrayFounder S = SuffixArrayFounder(str);
     std::vector<long long> suffix_array = S.show_suffix_array();
-    std::vector<long long> Lcps = S.LCPs();
+    std::vector<long long> Lcps = S.Kasai_algorithm(str);
     bool k_stats_exists = false;
     long long minimum_common_substr = 0;
     for (long long i = 2; i < suffix_array.size() - 1; ++i) {
