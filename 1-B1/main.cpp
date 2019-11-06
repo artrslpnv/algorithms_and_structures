@@ -1,7 +1,8 @@
-
 #include <iostream>
 #include <vector>
 #include <string>
+
+const int alphabet_size = 26;
 
 std::string lexographic_minimum(std::vector<int> &prefix) {
     if (!(prefix.size())) {
@@ -10,18 +11,14 @@ std::string lexographic_minimum(std::vector<int> &prefix) {
     std::string str = "a";
     for (int i = 1; i < prefix.size(); ++i) {
         if (prefix[i] == 0) {
-            std::vector<bool> alphabet(26);
-            alphabet.assign(26, false);
+            std::bitset <alphabet_size> alphabet;
             int previos_prefix_func_value = prefix[i - 1];
             while (previos_prefix_func_value != 0) {
-                alphabet[str[previos_prefix_func_value] - 'a'] = true;
+                alphabet[str[previos_prefix_func_value] - 'a'] = 1;
                 previos_prefix_func_value = prefix[previos_prefix_func_value - 1];
             }
             char character_to_put = 'a' + 1;
-            while (true) {
-                if (!alphabet[character_to_put - 'a']) {
-                    break;
-                }
+            while (alphabet[character_to_put - 'a']) {
                 ++character_to_put;
             }
             str = str + character_to_put;
