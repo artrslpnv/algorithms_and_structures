@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 
-void prefix_function(std::string &s, std::string &temp, std::vector<int> &prefix, std::vector<int> &entries) {
+void founding_prefix_array_of_the_temp(std::vector<int> &prefix, std::string &temp) {
     int size = temp.length();
     for (int i = 1; i < size; ++i) {
         int index = prefix[i - 1];
@@ -12,8 +12,12 @@ void prefix_function(std::string &s, std::string &temp, std::vector<int> &prefix
         if (temp[i] == temp[index]) { ++index; }
         prefix[i] = index;
     }
-    int previos_pf = 0;
+}
 
+void find_entries(std::string &s, std::string &temp, std::vector<int> &prefix, std::vector<int> &entries) {
+    founding_prefix_array_of_the_temp(prefix, temp);
+    int previos_pf = 0;
+    int size = temp.length();
     for (int i = 0; i < s.size(); ++i) {
         int j = previos_pf;
         while (j > 0 and s[i] != temp[j]) {
@@ -35,6 +39,6 @@ int main() {
     std::vector<int> prefix_for_temp(temp.length());
     prefix_for_temp[0] = 0;
     std::vector<int> enrty;
-    prefix_function(str, temp, prefix_for_temp, enrty);
+    find_entries(str, temp, prefix_for_temp, enrty);
     for (auto i : enrty) { std::cout << i << " "; }
 }
