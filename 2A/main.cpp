@@ -92,7 +92,7 @@ private:
         return amount_of_classes;
     }
 
-    long long IterationCoutingSort(std::vector<long long> &counting, const std::string &s,
+    void IterationCoutingSort(std::vector<long long> &counting, const std::string &s,
                                    std::vector<long long> &permitation_in_the_second_order) {
         int amount_of_classes = counting.size();
         for (int i = 0; i < s.size(); ++i) {
