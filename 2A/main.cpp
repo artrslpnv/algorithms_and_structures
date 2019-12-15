@@ -19,7 +19,8 @@ public:
                     permitation_in_the_second_order[i] += s.size();
                 }
             }
-            IterationCoutingSort(counting, s, permitation_in_the_second_order);
+            counting = std::vector<long long>(amount_of_classes, 0);
+            IterationCoutingSort(counting, s, permitation_in_the_second_order, amount_of_classes);
             std::vector<long long> new_equivalent_clases(s.size());
             new_equivalent_clases[0] = 0;
             amount_of_classes = 1;
@@ -92,9 +93,9 @@ private:
         return amount_of_classes;
     }
 
-    void IterationCoutingSort(std::vector<long long> &counting, const std::string &s,
-                                   std::vector<long long> &permitation_in_the_second_order) {
-        int amount_of_classes = counting.size();
+    long long IterationCoutingSort(std::vector<long long> &counting, const std::string &s,
+                                   std::vector<long long> &permitation_in_the_second_order,
+                                   long long amount_of_classes) {
         for (int i = 0; i < s.size(); ++i) {
             counting[equivalent_clases[permitation_in_the_second_order[i]]]++;
         }
