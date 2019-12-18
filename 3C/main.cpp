@@ -112,8 +112,6 @@ public:
             return false;
         }
 
-        double tg1 = v1._y / v1._x;
-        double tg2 = v2._y / v2._x;
 
         if (fabs(v1._x) < E) {
             if (v1._y > 0) {
@@ -122,13 +120,16 @@ public:
                 return false;
             }
         }
+
         if (fabs(v2._x) < E) {
             if (v2._y > 0) {
                 return v1._x > 0;
             } else {
-                return fabs(tg1 - tg2) > E;
+                return true;
             }
         }
+        double tg1 = v1._y / v1._x;
+        double tg2 = v2._y / v2._x;
 
         if (fabs(tg1 - tg2) < E) {
             return false;
