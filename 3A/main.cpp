@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iomanip>
 
-const double E = 0.0000001
+const double E = 0.0000001;
 
 class Vector {
 public:
@@ -124,49 +124,59 @@ public:
     Vector to;
 };
 
-double distance_between_dot_and_segment(Segment segment1, Vector dot) {
+double distance_between_two_dots(Vector dot1, Vector dot2) {
+    return (dot1 - dot2).len();
+}
+
+template<typename T>
+class UnimodalFunc;
+
+template<typename T>
+double ternar_search(Segment segment1, UnimodalFunc<T> function);
+
+template<typename T>
+class UnimodalFunc {
+public:
+    explicit UnimodalFunc(T &t) : segment_or_vector(t) {};
+
+    double operator()(Vector vector) {
+        return distance(vector, segment_or_vector);
+    }
+
+private:
+    T segment_or_vector;
+
+    double distance(Vector vector, Vector vector1) {
+        return distance_between_two_dots(vector, vector1);
+    }
+
+    double distance(Vector vector, Segment segment) {
+        UnimodalFunc<Vector> func(vector);
+        return ternar_search(segment, func);
+    }
+};
+
+template<class T>
+double ternar_search(Segment segment1, UnimodalFunc<T> function) {
     Vector l1 = segment1.from;
     Vector r1 = segment1.to;
     Vector m1 = l1 + (r1 - l1) / 3;
     Vector m2 = r1 - (r1 - l1) / 3;
+    double distance = 0;
     while ((m1 - m2).len() > E) {
-        if ((m1 - dot).len() > ((m2 - dot).len())) {
+
+        double distance_m1 = function(m1);
+        double distance_m2 = function(m2);
+
+        if (distance_m1 > distance_m2) {
             l1 = m1;
+            distance = distance_m2;
         } else {
             r1 = m2;
+            distance = distance_m1;
         }
         m1 = l1 + (r1 - l1) / 3;
         m2 = r1 - (r1 - l1) / 3;
-    }
-    return (m1 - dot).len();
-}
-
-double distance_between_segments(Segment segment1, Segment segment2) {
-    Vector l1 = segment1.from;
-    Vector r1 = segment1.to;
-    Vector r2 = segment2.to;
-    Vector l2 = segment2.from;
-    Vector m1 = l1 + (r1 - l1) / 3;
-    Vector m2 = r1 - (r1 - l1) / 3;
-    Vector m3 = l2 + (r2 - l2) / 3;
-    Vector m4 = r2 - (r2 - l2) / 3;
-    double distance = 0;
-    if ((m1 - m2).len() > E) {
-        while ((m1 - m2).len() > E) {
-            double distance_m1 = distance_between_dot_and_segment(segment2, m1);
-            double distance_m2 = distance_between_dot_and_segment(segment2, m2);
-            if (distance_m1 > distance_m2) {
-                l1 = m1;
-                distance = distance_m2;
-            } else {
-                r1 = m2;
-                distance = distance_m1;
-            }
-            m1 = l1 + (r1 - l1) / 3;
-            m2 = r1 - (r1 - l1) / 3;
-        }
-    } else {
-        distance = distance_between_dot_and_segment(segment2, m1);
     }
     return distance;
 }
@@ -176,7 +186,8 @@ int main() {
     std::cin >> x >> y >> z >> x1 >> y1 >> z1 >> x2 >> y2 >> z2 >> x3 >> y3 >> z3;
     Segment segment = Segment(x, y, z, x1, y1, z1);
     Segment segment1 = Segment(x2, y2, z2, x3, y3, z3);
-    std::cout << std::setprecision(10) << distance_between_segments(segment, segment1);
+    UnimodalFunc<Segment> unimodalFunc(segment1);
+    std::cout << std::setprecision(10) << ternar_search(segment, unimodalFunc);
     return 0;
 }
 
