@@ -356,7 +356,7 @@ int main() {
         }
 
         std::vector<Face> hull = Build3dHull_GiftWrapping(points);
-        //std::sort(hull.begin(), hull.end());
+        std::sort(hull.begin(), hull.end());
         std::cout << hull.size() << "\n";
         for (Face &f : hull) {
             std::cout << 3 << " " << f.p1.index << " " << f.p2.index << " " << f.p3.index << "\n";
