@@ -294,7 +294,7 @@ int find_next_dot(const std::vector<Point> &points, Point p1, Point p2, Face las
     return index;
 }
 
-std::vector<Face> Build3dHull(std::vector<Point> &Points) {
+std::vector<Face> Build3dHull_GiftWrapping(std::vector<Point> &Points) {
     Point first_dot = Points[find_the_first_hull_dot(Points)];
     std::unordered_set<Face, Face_hasher> processed_faces;
     std::unordered_set<Edge, Edge_hasher> processed_edges;
