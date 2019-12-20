@@ -147,14 +147,17 @@ public:
 
     };
 
+
+    friend double scalar_multiply(const Vector &vector1, const Vector &vector2) {
+        return vector1._x * vector2._x + vector1._y * vector2._y + vector1._z * vector2._z;
+    };
+
+
     double _x = 0;
     double _y = 0;
     double _z = 0;
 };
 
-double scalar_multiply(const Vector &vector1, const Vector &vector2) {
-    return vector1._x * vector2._x + vector1._y * vector2._y + vector1._z * vector2._z;
-};
 
 Vector vector_multiply(const Vector &vector1, const Vector &vector2) {
     Vector result;
@@ -187,7 +190,7 @@ struct Edge {
     Point p2;
 
     friend bool operator==(const Edge &face1, const Edge &face2) {
-        return (face1.p1 == face2.p1 && face1.p2 == face2.p2) || (face1.p2 == face2.p1 && face1.p1 == face2.p2);
+        return (face1.p1 == face2.p1 && face1.p2 == face2.p2);
     }
 };
 
@@ -195,6 +198,8 @@ struct Face {
     Point p1;
     Point p2;
     Point p3;
+
+    Face() : p1(), p2(), p3() {}
 
     Face(Point _p1, Point _p2, Point _p3) : p1(_p1), p2(_p2), p3(_p3) {
         Order();
@@ -228,8 +233,49 @@ struct Face {
         } else { return false; }
     }
 
+    void NormalizeFace(std::vector<Point> &points, int first, int second, int third) {
+        Face tmp_face(points[first], points[second], points[third]);
+        first = tmp_face.p1.index;
+        second = tmp_face.p2.index;
+        third = tmp_face.p3.index;
+
+        Vector b1(Vector(points[second]) - Vector(points[first]));
+        Vector b2(Vector(points[third]) - Vector(points[second]));
+        Vector normal_vector = vector_multiply(b1, b2);
+        normal_vector = normal_vector / normal_vector.len();
+        int one_different_point_from_points_index = -1;
+        int size = points.size();
+        for (int i = 0; i < size; ++i) {
+            if (i != first && i != second && i != third) {
+                one_different_point_from_points_index = i;
+                break;
+            }
+        }
+
+        bool counter = true;
+        if (scalar_multiply(normal_vector,
+                            Vector(points[one_different_point_from_points_index]) - Vector(points[first])) > -E) {
+            normal_vector = -1 * normal_vector;
+            counter = false;
+        }
+
+        if (!counter) {
+            p1 = points[first];
+            p2 = points[third];
+            p3 = points[second];
+        } else {
+            p1 = points[first];
+            p2 = points[second];
+            p3 = points[third];
+        }
+    }
+
     friend bool operator==(const Face &face1, const Face &face2) {
         return face1.p1 == face2.p1 && face1.p2 == face2.p2 && face1.p3 == face2.p3;
+    }
+
+    friend bool operator!=(const Face &face1, const Face &face2) {
+        return !(face1.p1 == face2.p1 && face1.p2 == face2.p2 && face1.p3 == face2.p3);
     }
 };
 
@@ -257,15 +303,12 @@ struct Edge_hasher {
 };
 
 int find_the_second_dot(const std::vector<Point> &points, Point first_dot) {
-    Vector v1(1, 0, 0);
-    Vector n_Oxy(0, 0, 1);
     double max_cos = -1.1;
     int index = -1;
     for (int i = 0; i < points.size(); ++i) {
         if (i != first_dot.index) {
             Vector v2 = Vector(points[i]) - Vector(first_dot);
-            Vector v3 = vector_multiply(v1, v2);
-            double cos = find_cos_of_angle_between(v3, n_Oxy);
+            double cos = sqrt(v2._x * v2._x + v2._y * v2._y) / v2.len();
             if (cos > max_cos) {
                 max_cos = cos;
                 index = i;
@@ -275,51 +318,83 @@ int find_the_second_dot(const std::vector<Point> &points, Point first_dot) {
     return index;
 }
 
-int find_next_dot(const std::vector<Point> &points, Point p1, Point p2, Face last_face) {
-    Vector v1(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
-    double max_cos = -1.1;
-    int index = -1;
-    for (int i = 0; i < points.size(); ++i) {
-        if (i != p1.index && i != p2.index && i != last_face.p1.index && i != last_face.p2.index &&
-            i != last_face.p3.index) {
-            Vector v2 = Vector(points[i]) - Vector(p2);
-            Vector v3 = vector_multiply(v1, v2);
-            double cos = find_cos_of_angle_between(v3, last_face.find_normal());
-            if (cos > max_cos) {
-                max_cos = cos;
-                index = i;
+int find_point(const std::vector<Point> &points, int first, int second, int third = -1) {
+    int size = points.size();
+    int new_point = -1;
+    Vector edge_vector(Vector(points[second]) - Vector(points[first]));
+    for (int i = 0; i < size; ++i) {
+        if (i != first && i != second && i != third) {
+            if (new_point == -1) {
+                new_point = i;
+                continue;
+            }
+            Vector v1(Vector(points[new_point]) - Vector(points[first]));
+            Vector v2(Vector(points[i]) - Vector(points[first]));
+
+            Vector normal_vector = vector_multiply(v1, v2);
+            if (scalar_multiply(normal_vector, edge_vector) > -E) {
+                new_point = i;
             }
         }
     }
-    return index;
+    return new_point;
 }
 
-std::vector<Face> Build3dHull_GiftWrapping(std::vector<Point> &Points) {
-    Point first_dot = Points[find_the_first_hull_dot(Points)];
-    std::unordered_set<Face, Face_hasher> processed_faces;
-    std::unordered_set<Edge, Edge_hasher> processed_edges;
-    std::queue<std::pair<Edge, Face>> queue;
-    std::vector<Face> hull;
-    Point second_point = Points[find_the_second_dot(Points, first_dot)];
-    Point Helping_dot(first_dot.x - 0.01, first_dot.y, first_dot.z, -1);
-    Face last_face(Helping_dot, first_dot, second_point);
-    queue.push(std::make_pair(Edge(first_dot, second_point), last_face));
+Face InsertFace(std::unordered_set<Edge, Edge_hasher> &ProcessedEdges, const std::vector<Point> &points, Edge edge,
+                int third) {
+    std::swap(edge.p1, edge.p2);
+    Face result;
+    if (ProcessedEdges.count(edge) == 0) {
+        int point_to_add_index = find_point(points, edge.p1.index, edge.p2.index, third);
+        result = Face(edge.p1, edge.p2, points[point_to_add_index]);
+    }
+    return result;
+}
+
+std::vector<Face> Build3dHull(std::vector<Point> &points) {
+    std::vector<Face> Hull;
+    int first = find_the_first_hull_dot(points);
+    int second = find_the_second_dot(points, points[first]);
+    int third = find_point(points, first, second);
+    Face first_face(points[first], points[second], points[third]);
+    first_face.NormalizeFace(points, first, second, third);
+    std::queue<Face> queue;
+    queue.push(first_face);
+    std::unordered_set<Edge, Edge_hasher> ProcessedEdges;
+    ProcessedEdges.insert(Edge(first_face.p1, first_face.p2));
+    ProcessedEdges.insert(Edge(first_face.p2, first_face.p3));
+    ProcessedEdges.insert(Edge(first_face.p3, first_face.p1));
     while (!queue.empty()) {
-        std::pair<Edge, Face> e = queue.front();
+        Face cur_face = queue.front();
         queue.pop();
-        if (processed_edges.count(e.first) == 0) {
-            Point p3 = Points[find_next_dot(Points, e.first.p1, e.first.p2, e.second)];
-            Face new_face(e.first.p1, e.first.p2, p3);
-            if (processed_faces.count(new_face) == 0) {
-                hull.push_back(new_face);
-                processed_faces.insert(new_face);
-            }
-            processed_edges.insert(e.first);
-            queue.push(std::make_pair(Edge(e.first.p2, p3), new_face));
-            queue.push(std::make_pair(Edge(p3, e.first.p1), new_face));
+        Hull.push_back(cur_face);
+        Edge edge1(cur_face.p1, cur_face.p2);
+        Edge edge2(cur_face.p2, cur_face.p3);
+        Edge edge3(cur_face.p3, cur_face.p1);
+        Face face_to_check;
+        Face face_to_add = InsertFace(ProcessedEdges, points, edge1, edge2.p2.index);
+        if (face_to_add != face_to_check) {
+            queue.push(face_to_add);
+            ProcessedEdges.insert(Edge(face_to_add.p1, face_to_add.p2));
+            ProcessedEdges.insert(Edge(face_to_add.p2, face_to_add.p3));
+            ProcessedEdges.insert(Edge(face_to_add.p3, face_to_add.p1));
+        }
+        face_to_add = InsertFace(ProcessedEdges, points, edge2, edge3.p2.index);
+        if (face_to_add != face_to_check) {
+            ProcessedEdges.insert(Edge(face_to_add.p1, face_to_add.p2));
+            ProcessedEdges.insert(Edge(face_to_add.p2, face_to_add.p3));
+            ProcessedEdges.insert(Edge(face_to_add.p3, face_to_add.p1));
+            queue.push(face_to_add);
+        }
+        face_to_add = InsertFace(ProcessedEdges, points, edge3, edge1.p2.index);
+        if (face_to_add != face_to_check) { ;
+            ProcessedEdges.insert(Edge(face_to_add.p1, face_to_add.p2));
+            ProcessedEdges.insert(Edge(face_to_add.p2, face_to_add.p3));
+            ProcessedEdges.insert(Edge(face_to_add.p3, face_to_add.p1));
+            queue.push(face_to_add);
         }
     }
-    return hull;
+    return Hull;
 }
 
 void rotate(Point &p, double angle) {
@@ -355,7 +430,7 @@ int main() {
             points.push_back(p);
         }
 
-        std::vector<Face> hull = Build3dHull_GiftWrapping(points);
+        std::vector<Face> hull = Build3dHull(points);
         std::sort(hull.begin(), hull.end());
         std::cout << hull.size() << "\n";
         for (Face &f : hull) {
