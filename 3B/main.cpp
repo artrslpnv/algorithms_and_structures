@@ -239,8 +239,8 @@ struct Face {
         second = tmp_face.p2.index;
         third = tmp_face.p3.index;
 
-        Vector b1(Vector(points[second]) - Vector(points[first]));
-        Vector b2(Vector(points[third]) - Vector(points[second]));
+        Vector b1(Vector(p2) - Vector(p1));
+        Vector b2(Vector(p3) - Vector(p2));
         Vector normal_vector = vector_multiply(b1, b2);
         normal_vector = normal_vector / normal_vector.len();
         int one_different_point_from_points_index = -1;
@@ -321,7 +321,9 @@ int find_the_second_dot(const std::vector<Point> &points, Point first_dot) {
 int find_point(const std::vector<Point> &points, int first, int second, int third = -1) {
     int size = points.size();
     int new_point = -1;
-    Vector edge_vector(Vector(points[second]) - Vector(points[first]));
+    Point p2 = points[second];
+    Point p1 = points[first];
+    Vector edge_vector(Vector(p2) - Vector(p1));
     for (int i = 0; i < size; ++i) {
         if (i != first && i != second && i != third) {
             if (new_point == -1) {
